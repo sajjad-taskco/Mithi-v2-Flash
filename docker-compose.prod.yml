@@ -1,0 +1,38 @@
+# Mithi on its own server, reached by the ecommerce app over HTTPS.
+#
+#   1. DNS: point MITHI_DOMAIN (e.g. tts.example.com) at this server.
+#   2. cp .env.prod.example .env  and set MITHI_DOMAIN
+#   3. docker compose -f docker-compose.prod.yml up -d --build
+#   4. docker logs mithi-v2-flash  → the API key Mithi generated on first start
+#   5. SaaS admin → System Settings → Call Voice: URL https://MITHI_DOMAIN + that key.
+#      Later, "Rotate key" there changes it on both sides — never edit it by hand.
+#
+# Caddy gets and renews the Let's Encrypt certificate by itself (ports 80 + 443 must be open).
+# Mithi itself is never published — only Caddy is.
+services:
+  mithi:
+    build: .
+    image: mithi-v2-flash:latest
+    container_name: mithi-v2-flash
+    environment:
+      MITHI_THREADS: ${MITHI_THREADS:-4}
+    volumes:
+      - mithi-data:/data   # the API key — keep this volume, or a new key is generated
+    restart: unless-stopped
+
+  caddy:
+    image: caddy:2.8.4
+    container_name: mithi-caddy
+    command: caddy reverse-proxy --from ${MITHI_DOMAIN:?set MITHI_DOMAIN in .env} --to mithi:8000
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - caddy-data:/data
+    depends_on:
+      - mithi
+    restart: unless-stopped
+
+volumes:
+  mithi-data:
+  caddy-data:

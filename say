@@ -1,0 +1,6 @@
+#!/usr/bin/env bash
+# Usage: ./say "টেক্সট" [lang] [voice]     — speaks directly, no file saved
+TEXT="${1:?text required}"; LANG_="${2:-bn}"; VOICE="${3:-ahana}"; PORT="${MITHI_PORT:-8010}"
+KEY="$(docker exec mithi-v2-flash cat /data/api_key)"
+curl -sfG -H "Authorization: Bearer ${KEY}" "http://127.0.0.1:${PORT}/tts" --data-urlencode "text=${TEXT}" \
+     --data-urlencode "lang=${LANG_}" --data-urlencode "voice=${VOICE}" | aplay -q -
